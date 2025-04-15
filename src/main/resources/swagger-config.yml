@@ -1,0 +1,11 @@
+swagger:
+  groups:
+    - name: auth
+      packageName: uz.alifservice.controller.auth
+      paths:
+        - /api/v1/users/**
+        - /api/v1/roles/**
+    - name: checklist
+      packageName: uz.alifservice.controller.checklist
+      paths:
+        - /api/v1/checklist-categories/**
