@@ -1,21 +1,20 @@
 package uz.alifservice.service.auth;
 
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import uz.alifservice.config.security.CustomUserDetails;
+import uz.alifservice.config.security.CustomUserDetailsService;
 import uz.alifservice.domain.auth.Role;
 import uz.alifservice.domain.auth.User;
-import uz.alifservice.dto.auth.auth.AuthDto;
-import uz.alifservice.dto.auth.role.RoleDto;
-import uz.alifservice.dto.auth.user.UserCrudDto;
-import uz.alifservice.dto.communication.sms.SmsResendDTO;
-import uz.alifservice.dto.communication.sms.SmsVerificationDTO;
+import uz.alifservice.dto.AppResponse;
+import uz.alifservice.dto.auth.auth.*;
+import uz.alifservice.dto.communication.sms.ResendVerificationDto;
 import uz.alifservice.enums.AppLanguage;
 import uz.alifservice.enums.GeneralStatus;
+import uz.alifservice.enums.SmsType;
 import uz.alifservice.exps.AppBadException;
-import uz.alifservice.mapper.auth.RoleMapper;
 import uz.alifservice.mapper.auth.UserMapper;
 import uz.alifservice.repository.auth.RoleRepository;
 import uz.alifservice.repository.auth.UserRepository;
@@ -39,162 +38,153 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final RoleMapper roleMapper;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final RoleService roleService;
     private final EmailSendingService emailSendingService;
-    private final UserService userService;
     private final RoleRepository roleRepository;
     private final ResourceBundleService bundleService;
     private final SmsSendService smsSendService;
     private final SmsHistoryService smsHistoryService;
     private final EmailHistoryService emailHistoryService;
     private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
 
-    public User registration(UserCrudDto dto, AppLanguage lang) {
-
+    public AppResponse<?> registration(AuthDto dto, AppLanguage lang) {
         Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getUsername());
         if (optional.isPresent()) {
             User user = optional.get();
             if (user.getStatus().equals(GeneralStatus.IN_REGISTRATION)) {
                 userRepository.deleteRolesByUserId(user.getId());
                 userRepository.delete(user);
-                // send sms/email
             } else {
                 throw new AppBadException(bundleService.getMessage("email.phone.exists", lang));
             }
         }
 
         Role roleUser = roleRepository.findByRoleNameAndActiveTrueAndDeletedFalse("ROLE_USER");
-        RoleDto roleDto = roleMapper.toDto(roleUser);
-        Set<RoleDto> roleSet = new HashSet<>();
-        roleSet.add(roleDto);
+        Set<Role> roleSet = new HashSet<>();
+        roleSet.add(roleUser);
 
-        dto.setRoles(roleSet);
-        dto.setPassword(bCryptPasswordEncoder.encode(dto.getPassword()));
-        dto.setStatus(GeneralStatus.IN_REGISTRATION);
-        User entity = userRepository.save(userMapper.fromCreateDto(dto));
+        User entity = new User();
+        entity.setFullName(dto.getFullName());
+        entity.setUsername(dto.getUsername());
+        entity.setPassword(bCryptPasswordEncoder.encode(dto.getPassword()));
+        entity.setRoles(roleSet);
+        entity.setStatus(GeneralStatus.IN_REGISTRATION);
+        User user = userRepository.save(entity);
 
-        // send
+        String key = sendCodeForEmailOrPhone(user.getUsername(), SmsType.REGISTRATION, lang);
+        return AppResponse.success(null, bundleService.getMessage("confirm.send." + key, lang));
+    }
+
+    public AppResponse<AuthVerificationResDto> registrationVerification(AuthVerificationReqDto dto, AppLanguage lang) {
+        User user = getUserIfExists(dto.getUsername(), lang);
+        checkUserStatusOrThrow(user.getStatus(), GeneralStatus.IN_REGISTRATION, lang);
+
         if (PhoneUtil.isPhone(dto.getUsername())) {
-            smsSendService.sendRegistrationSms(dto.getUsername(), lang);
+            smsHistoryService.check(dto.getUsername(), dto.getCode(), lang);
         } else if (EmailUtil.isEmail(dto.getUsername())) {
-            emailSendingService.sendRegistrationEmail(entity.getUsername(), entity.getId(), lang);
+            emailHistoryService.check(dto.getUsername(), dto.getCode(), lang);
         }
-
-        return entity;
-    }
-
-    public String registrationEmailVerification(String token, AppLanguage lang) {
-        try {
-            Long userId = Long.valueOf(jwtUtil.extractUsername(token));
-            User user = userService.get(userId, lang);
-            if (user.getStatus().equals(GeneralStatus.IN_REGISTRATION)) {
-                userRepository.changeStatus(userId, GeneralStatus.ACTIVE);
-                return bundleService.getMessage("verification.finished", lang);
-            }
-        } catch (JwtException e) {
-        }
-        throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-    }
-
-    public User login(AuthDto dto, AppLanguage lang) {
-
-        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getUsername());
-        if (optional.isEmpty()) {
-            throw new AppBadException(bundleService.getMessage("username.password.wrong", lang));
-        }
-
-        User user = optional.get();
-        if (!bCryptPasswordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new AppBadException(bundleService.getMessage("username.password.wrong", lang));
-        }
-
-        if (!user.getStatus().equals(GeneralStatus.ACTIVE)) {
-            throw new AppBadException(bundleService.getMessage("status.wrong", lang));
-        }
-        return user;
-    }
-
-    public User registrationSmsVerification(SmsVerificationDTO dto, AppLanguage lang) {
-        // 998931051739
-        // 12345
-
-        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getPhone());
-        if (optional.isEmpty()) {
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-        }
-        User user = optional.get();
-        if (!user.getStatus().equals(GeneralStatus.IN_REGISTRATION)) {
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-        }
-
-        // code check
-        smsHistoryService.check(dto.getPhone(), dto.getCode(), lang);
-
-        // ACTIVE
         userRepository.changeStatus(user.getId(), GeneralStatus.ACTIVE);
-        return user;
+
+        user.setPassword(null);
+        user.setStatus(GeneralStatus.ACTIVE);
+        AuthVerificationResDto resDto = new AuthVerificationResDto(
+                jwtUtil.generateAccessToken(user.getId()),
+                jwtUtil.generateRefreshToken(user.getId()),
+                userMapper.toDto(user)
+        );
+        return AppResponse.success(resDto, bundleService.getMessage("verification.success", lang));
     }
 
-    public String registrationSmsVerificationResend(SmsResendDTO dto, AppLanguage lang) {
-
-        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getPhone());
-        if (optional.isEmpty()) {
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-        }
-        User user = optional.get();
-        if (!user.getStatus().equals(GeneralStatus.IN_REGISTRATION)) {
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-        }
-
-        smsSendService.sendRegistrationSms(dto.getPhone(), lang);
-        return bundleService.getMessage("sms.resend", lang);
+    public AppResponse<?> registrationVerificationResend(ResendVerificationDto dto, AppLanguage lang) {
+        User user = getUserIfExists(dto.getUsername(), lang);
+        checkUserStatusOrThrow(user.getStatus(), GeneralStatus.IN_REGISTRATION, lang);
+        String key = sendCodeForEmailOrPhone(user.getUsername(), SmsType.REGISTRATION, lang);
+        return AppResponse.success(null, bundleService.getMessage(key + ".resend", lang));
     }
 
-    public AuthDto resetPassword(AuthDto dto, AppLanguage lang) {
-
-        // check
-        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getUsername());
-        if (optional.isEmpty()) {
-            throw new AppBadException(bundleService.getMessage("profile.not.found", lang));
+    public AppResponse<AuthVerificationResDto> login(LoginDto dto, AppLanguage lang) {
+        User user = getUserIfExists(dto.getUsername(), lang);
+        if (!bCryptPasswordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new AppBadException(bundleService.getMessage("password.wrong", lang));
         }
+        checkUserStatusOrThrow(user.getStatus(), GeneralStatus.ACTIVE, lang);
 
-        User user = optional.get();
-        if (!user.getStatus().equals(GeneralStatus.ACTIVE)) {
-            throw new AppBadException(bundleService.getMessage("status.wrong", lang));
-        }
-
-        // send
-        if (PhoneUtil.isPhone(dto.getUsername())) {
-            smsSendService.sendResetPasswordSms(dto.getUsername(), lang);
-        } else if (EmailUtil.isEmail(dto.getUsername())) {
-            emailSendingService.sendResetPasswordEmail(dto.getUsername(), lang);
-        }
-
-        return dto;
+        user.setPassword(null);
+        AuthVerificationResDto resDto = new AuthVerificationResDto(
+                jwtUtil.generateAccessToken(user.getId()),
+                jwtUtil.generateRefreshToken(user.getId()),
+                userMapper.toDto(user)
+        );
+        return AppResponse.success(resDto, bundleService.getMessage("login.success", lang));
     }
 
-    public String resetPasswordConfirm(AuthDto dto, AppLanguage lang) {
+    public AppResponse<?> resetPassword(ResetPasswordDto dto, AppLanguage lang) {
+        User user = getUserIfExists(dto.getUsername(), lang);
+        checkUserStatusOrThrow(user.getStatus(), GeneralStatus.ACTIVE, lang);
+        String key = sendCodeForEmailOrPhone(user.getUsername(), SmsType.RESET_PASSWORD, lang);
+        return AppResponse.success(null, bundleService.getMessage("confirm.send." + key, lang));
+    }
 
-        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getUsername());
-        if (optional.isEmpty()) {
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
-        }
-        User user = optional.get();
-        if (!user.getStatus().equals(GeneralStatus.ACTIVE)) {
-            throw new AppBadException(bundleService.getMessage("status.wrong", lang));
-        }
+    public AppResponse<?> resetPasswordConfirm(ResetPasswordConfirmDto dto, AppLanguage lang) {
+        User user = getUserIfExists(dto.getUsername(), lang);
+        checkUserStatusOrThrow(user.getStatus(), GeneralStatus.ACTIVE, lang);
 
-        // check
         if (PhoneUtil.isPhone(dto.getUsername())) {
             smsHistoryService.check(dto.getUsername(), dto.getConfirmCode(), lang);
         } else if (EmailUtil.isEmail(dto.getUsername())) {
             emailHistoryService.check(dto.getUsername(), dto.getConfirmCode(), lang);
+        } else {
+            throw new AppBadException(bundleService.getMessage("email.phone.wrong.format", lang));
         }
-        // update
-        userRepository.updatePassword(user.getId(), bCryptPasswordEncoder.encode(dto.getPassword()));
-        // return
-        return bundleService.getMessage("reset.password.success", lang);
+
+        userRepository.updatePassword(user.getId(), bCryptPasswordEncoder.encode(dto.getNewPassword()));
+        return AppResponse.success(null, bundleService.getMessage("reset.success", lang));
     }
+
+    public AppResponse<AuthVerificationResDto> handleOAuth2Callback(String email, String name, String accessToken, String refreshToken, AppLanguage lang) {
+        CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.createOrUpdateOAuth2User(email, name);
+        User user = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(email).get();
+
+        AuthVerificationResDto resDto = new AuthVerificationResDto(
+                accessToken,
+                refreshToken,
+                userMapper.toDto(user)
+        );
+        return AppResponse.success(resDto, bundleService.getMessage("login.success", lang));
+    }
+
+    private User getUserIfExists(String username, AppLanguage lang) {
+        Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(username);
+        if (optional.isEmpty()) {
+            if (PhoneUtil.isPhone(username)) {
+                throw new AppBadException(bundleService.getMessage("phone.not.found", lang));
+            } else if (EmailUtil.isEmail(username)) {
+                throw new AppBadException(bundleService.getMessage("email.not.found", lang));
+            } else {
+                throw new AppBadException(bundleService.getMessage("email.phone.wrong.format", lang));
+            }
+        }
+        return optional.get();
+    }
+
+    private void checkUserStatusOrThrow(GeneralStatus userStatus, GeneralStatus status, AppLanguage lang) {
+        if (!userStatus.equals(status)) {
+            throw new AppBadException(bundleService.getMessage("status.wrong", lang));
+        }
+    }
+
+    private String sendCodeForEmailOrPhone(String username, SmsType smsType, AppLanguage lang) {
+        if (PhoneUtil.isPhone(username)) {
+            smsSendService.sendRegistrationSms(username, smsType, lang);
+            return "sms";
+        } else if (EmailUtil.isEmail(username)) {
+            emailSendingService.sendRegistrationEmail(username, smsType, lang);
+            return "email";
+        } else {
+            throw new AppBadException(bundleService.getMessage("email.phone.incorrect.format", lang));
+        }
+    }
+
 }

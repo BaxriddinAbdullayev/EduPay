@@ -1,4 +1,4 @@
-package uz.alifservice.dto.communication.sms;
+package uz.alifservice.dto.auth.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -8,10 +8,10 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class SmsVerificationDTO {
+public class AuthVerificationReqDto {
 
-    @NotBlank(message = "Phone required")
-    private String phone;
+    @NotBlank(message = "Email or phone required")
+    private String username;
 
     @NotBlank(message = "Code required")
     private String code;

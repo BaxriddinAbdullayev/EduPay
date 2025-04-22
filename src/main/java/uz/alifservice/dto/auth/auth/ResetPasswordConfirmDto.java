@@ -6,14 +6,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AuthDto {
+public class ResetPasswordConfirmDto {
 
-    @NotBlank(message = "Full name required")
-    private String fullName;
-
-    @NotBlank(message = "Email or phone required")
+    @NotBlank(message = "Username required")
     private String username;
 
     @NotBlank(message = "Password required")
-    private String password;
+    private String newPassword;
+
+    @NotBlank(message = "Confirm Code required")
+    private String confirmCode;
 }

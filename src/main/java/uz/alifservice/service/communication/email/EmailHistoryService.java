@@ -49,7 +49,7 @@ public class EmailHistoryService {
         // check code
         if (!entity.getCode().equals(code)) {
             emailHistoryRepository.updateAttemptCount(entity.getId()); // update attempt count ++
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
+            throw new AppBadException(bundleService.getMessage("invalid.code", lang));
         }
 
         // check time

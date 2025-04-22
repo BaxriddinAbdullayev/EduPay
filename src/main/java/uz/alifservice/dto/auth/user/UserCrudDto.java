@@ -12,9 +12,6 @@ import java.util.Set;
 @Setter
 public class UserCrudDto extends GenericCrudDto {
 
-    private String firstName;
-    private String middleName;
-    private String lastName;
     private String fullName;
     private String username;
     private String tempUsername;

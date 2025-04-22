@@ -32,36 +32,33 @@ public class SmsHistoryService {
         smsHistoryRepository.save(entity);
     }
 
-    public Long getSmsCount(String phone){
+    public Long getSmsCount(String phone) {
         LocalDateTime now = LocalDateTime.now();
         return smsHistoryRepository.countByPhoneAndCreatedAtBetween(phone, now.minusMinutes(1), now);
     }
 
-    public void check(String phoneNumber, String code, AppLanguage lang){
-        // find last sms by phoneNumber
+    public void check(String phoneNumber, String code, AppLanguage lang) {
         Optional<SmsHistory> optional = smsHistoryRepository.findTop1ByPhoneOrderByCreatedAtDesc(phoneNumber);
-        if(optional.isEmpty()){
+        if (optional.isEmpty()) {
             throw new AppBadException(bundleService.getMessage("verification.failed", lang));
         }
 
         SmsHistory entity = optional.get();
-        //Attempt count
-        if(entity.getAttemptCount() >= 3){
+        if (entity.getAttemptCount() >= 3) {
             throw new AppBadException(bundleService.getMessage("attempts.number.expired", lang));
         }
-        // check code
-        if (!entity.getCode().equals(code)){
-            smsHistoryRepository.updateAttemptCount(entity.getId()); // update attempt count ++
-            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
+
+        if (!entity.getCode().equals(code)) {
+            smsHistoryRepository.updateAttemptCount(entity.getId());
+            throw new AppBadException(bundleService.getMessage("invalid.code", lang));
         }
 
-        // check time
         LocalDateTime expDate = entity.getCreatedAt().toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime()
                 .plusMinutes(2);
 
-        if(LocalDateTime.now().isAfter(expDate)){ // not valid
+        if (LocalDateTime.now().isAfter(expDate)) {
             throw new AppBadException(bundleService.getMessage("code.timed.out", lang));
         }
     }

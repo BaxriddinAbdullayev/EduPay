@@ -6,10 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AuthDto {
-
-    @NotBlank(message = "Full name required")
-    private String fullName;
+public class LoginDto {
 
     @NotBlank(message = "Email or phone required")
     private String username;

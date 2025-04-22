@@ -47,7 +47,8 @@ public class SwaggerConfig {
         List<ApiGroup> apiGroups = Arrays.asList(
                 new ApiGroup("User Controller", "/api/v1/users/**"),
                 new ApiGroup("Role Controller", "/api/v1/roles/**"),
-                new ApiGroup("Auth Controller", "/api/v1/auth/**")
+                new ApiGroup("Auth Controller", "/api/v1/auth/**"),
+                new ApiGroup("FileTempStorage Controller", "/api/v1/file/resource-file/**")
         );
 
         return apiGroups.stream()

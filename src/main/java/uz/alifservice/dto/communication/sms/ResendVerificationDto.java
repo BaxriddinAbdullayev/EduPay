@@ -6,8 +6,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SmsResendDTO {
+public class ResendVerificationDto {
 
-    @NotBlank(message = "Phone required")
-    private String phone;
+    @NotBlank(message = "Email or Phone required")
+    private String username;
 }

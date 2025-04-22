@@ -41,47 +41,33 @@ public class SmsSendService {
     @Value("${sms.limit}")
     private Integer smsLimit;
 
-    public void sendRegistrationSms(String phoneNumber, AppLanguage lang) {
+    public void sendRegistrationSms(String phoneNumber, SmsType smsType, AppLanguage lang) {
         String code = RandomUtil.getRandomSmsCode();
         System.out.println(code);
         // test uchun ishlatilyapdi
-        String message = bundleService.getMessage("sms.registration.confirm.code", lang);
+        String message = "";
+        switch (smsType) {
+            case SmsType.REGISTRATION -> message = bundleService.getMessage("sms.registration.confirm.code", lang);
+            case SmsType.RESET_PASSWORD -> message = bundleService.getMessage("sms.reset.password.confirm", lang);
+            case SmsType.CHANGE_USERNAME_CONFIRM ->
+                    message = bundleService.getMessage("sms.change.username.confirm", lang);
+        }
 //        String message = "Ro'yxatdan o'tish uchun tasdiqlash codi (code) : %s";
 //        message = String.format(message,code);
-        sendSms(phoneNumber, message, code, SmsType.REGISTRATION);
+        sendSms(phoneNumber, message, code, smsType, lang);
     }
 
-    public void sendResetPasswordSms(String phoneNumber, AppLanguage lang) {
-        String code = RandomUtil.getRandomSmsCode();
-        System.out.println(code);
-        // test uchun ishlatilyapdi
-        String message = bundleService.getMessage("sms.reset.password.confirm", lang);
-//        String message = "Ro'yxatdan o'tish uchun tasdiqlash codi (code) : %s";
-//        message = String.format(message,code);
-        sendSms(phoneNumber, message, code, SmsType.RESET_PASSWORD);
-    }
-
-    public void sendUsernameChangeConfirmSms(String phoneNumber, AppLanguage lang) {
-        String code = RandomUtil.getRandomSmsCode();
-        System.out.println(code);
-        // test uchun ishlatilyapdi
-        String message = bundleService.getMessage("sms.change.username.confirm", lang);
-//        String message = "Ro'yxatdan o'tish uchun tasdiqlash codi (code) : %s";
-//        message = String.format(message,code);
-        sendSms(phoneNumber, message, code, SmsType.CHANGE_USERNAME_CONFIRM);
-    }
-
-    private SmsSendResponseDTO sendSms(String phoneNumber, String message, String code, SmsType smsType) {
+    private SmsSendResponseDTO sendSms(String phoneNumber, String message, String code, SmsType smsType, AppLanguage lang) {
         // check
         Long count = smsHistoryService.getSmsCount(phoneNumber);
         if (count >= smsLimit) {
             System.out.println("---- Sms Limit Reached. Phone : " + phoneNumber);
-            throw new AppBadException("Sms limit reached");
+            throw new AppBadException(bundleService.getMessage("sms.limit.reached", lang));
         }
 
-//        SmsSendResponseDTO result = sendSms(phoneNumber, message);
+        SmsSendResponseDTO result = sendSms(phoneNumber, message);
         smsHistoryService.create(phoneNumber, message, code, smsType);
-        return null;
+        return result;
     }
 
     private SmsSendResponseDTO sendSms(String phoneNumber, String message) {
