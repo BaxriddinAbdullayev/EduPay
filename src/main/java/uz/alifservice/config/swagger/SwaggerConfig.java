@@ -8,11 +8,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,7 +18,7 @@ import java.util.List;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Debt Control", // Optional: Qo'shimcha ma'lumot berish uchun
-                version = "2.0", // OpenAPI versiyasi noto'g'ri emas, faqat ma'lumot sifatida
+                version = "1.0", // OpenAPI versiyasi noto'g'ri emas, faqat ma'lumot sifatida
                 description = "MY Debt Control application"
         ),
         servers = {
@@ -42,13 +40,15 @@ public class SwaggerConfig {
 
     @Bean
     public List<GroupedOpenApi> userApi() {
-        record ApiGroup(String name, String path) {}
+        record ApiGroup(String name, String path) {
+        }
 
         List<ApiGroup> apiGroups = Arrays.asList(
                 new ApiGroup("User Controller", "/api/v1/users/**"),
                 new ApiGroup("Role Controller", "/api/v1/roles/**"),
                 new ApiGroup("Auth Controller", "/api/v1/auth/**"),
-                new ApiGroup("FileTempStorage Controller", "/api/v1/file/resource-file/**")
+                new ApiGroup("FileTempStorage Controller", "/api/v1/file/resource-file/**"),
+                new ApiGroup("Currency Controller", "/api/v1/currencies/**")
         );
 
         return apiGroups.stream()
@@ -60,7 +60,7 @@ public class SwaggerConfig {
                 .toList();
     }
 
-      // SECOND METHOD
+    // SECOND METHOD
 //    private List<ApiGroup> groups;
 //
 //    public record ApiGroup(String name, String packageName, List<String> paths) {}

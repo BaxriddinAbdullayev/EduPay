@@ -11,6 +11,7 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+import uz.alifservice.util.SpringSecurityUtil;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -45,21 +46,21 @@ public abstract class Auditable<U> implements Serializable {
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN default FALSE")
     private boolean deleted;
 
-//    @PrePersist
-//    public void prePersist() {
-//        if (SpringSecurityUtil.getCurrentUser() != null) {
-//            this.createdBy = (U) SpringSecurityUtil.getCurrentUser().getId();
-//        } else {
-//            this.createdBy = null;
-//        }
-//    }
-//
-//    @PreUpdate
-//    public void preUpdate() {
-//        if (SpringSecurityUtil.getCurrentUser() != null) {
-//            this.updatedBy = (U) SpringSecurityUtil.getCurrentUser().getId();
-//        } else {
-//            this.updatedBy = null;
-//        }
-//    }
+    @PrePersist
+    public void prePersist() {
+        if (SpringSecurityUtil.getCurrentUser() != null) {
+            this.createdBy = (U) SpringSecurityUtil.getCurrentUser().getId();
+        } else {
+            this.createdBy = null;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (SpringSecurityUtil.getCurrentUser() != null) {
+            this.updatedBy = (U) SpringSecurityUtil.getCurrentUser().getId();
+        } else {
+            this.updatedBy = null;
+        }
+    }
 }

@@ -30,6 +30,7 @@ public class SpringConfig {
 
     public static final String[] AUTH_WHITELIST = {
             "/api/v1/file/resource-file/**",
+            "/api/v1/currencies/**",
             "/login/oauth2/code/**",
             "/api/v1/auth/**",
             "/swagger-ui/**",
