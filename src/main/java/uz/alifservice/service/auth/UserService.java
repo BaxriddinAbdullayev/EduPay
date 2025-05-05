@@ -25,7 +25,7 @@ public class UserService implements GenericCrudService<User, UserCrudDto, UserCr
     @Override
     @Transactional(readOnly = true)
     public User get(Long id, AppLanguage lang) {
-        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
     }
 
     @Override

@@ -1,11 +1,12 @@
 package uz.alifservice.service.auth;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import uz.alifservice.config.security.CustomUserDetails;
-import uz.alifservice.config.security.CustomUserDetailsService;
 import uz.alifservice.domain.auth.Role;
 import uz.alifservice.domain.auth.User;
 import uz.alifservice.dto.AppResponse;
@@ -46,7 +47,6 @@ public class AuthService {
     private final SmsHistoryService smsHistoryService;
     private final EmailHistoryService emailHistoryService;
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
 
     public AppResponse<?> registration(AuthDto dto, AppLanguage lang) {
         Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(dto.getUsername());
@@ -143,16 +143,46 @@ public class AuthService {
         return AppResponse.success(null, bundleService.getMessage("reset.success", lang));
     }
 
-    public AppResponse<AuthVerificationResDto> handleOAuth2Callback(String email, String name, String accessToken, String refreshToken, AppLanguage lang) {
-        CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.createOrUpdateOAuth2User(email, name);
-        User user = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(email).get();
+    public AppResponse<AuthVerificationResDto> processOAuth2User(IdTokenRequest dto, AppLanguage lang) {
+        try {
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(dto.getIdToken());
+            String email = decodedToken.getEmail();
+            if (email == null) {
+                return AppResponse.error(bundleService.getMessage("verified.failed", lang));
+            }
 
-        AuthVerificationResDto resDto = new AuthVerificationResDto(
-                accessToken,
-                refreshToken,
-                userMapper.toDto(user)
-        );
-        return AppResponse.success(resDto, bundleService.getMessage("login.success", lang));
+            String name = decodedToken.getName();
+            Optional<User> optional = userRepository.findByUsernameAndActiveTrueAndDeletedFalse(email);
+            if (optional.isEmpty()) {
+                Role roleUser = roleRepository.findByRoleNameAndActiveTrueAndDeletedFalse("ROLE_USER");
+                Set<Role> roleSet = new HashSet<>();
+                roleSet.add(roleUser);
+
+                User entity = new User();
+                entity.setFullName(name);
+                entity.setUsername(email);
+                entity.setRoles(roleSet);
+                entity.setStatus(GeneralStatus.ACTIVE);
+                User user = userRepository.save(entity);
+
+                AuthVerificationResDto resDto = new AuthVerificationResDto(
+                        jwtUtil.generateAccessToken(user.getId()),
+                        jwtUtil.generateRefreshToken(user.getId()),
+                        userMapper.toDto(user)
+                );
+                return AppResponse.success(resDto, bundleService.getMessage("verified.successfully", lang));
+            }
+            User user = optional.get();
+            AuthVerificationResDto resDto = new AuthVerificationResDto(
+                    jwtUtil.generateAccessToken(user.getId()),
+                    jwtUtil.generateRefreshToken(user.getId()),
+                    userMapper.toDto(user)
+            );
+            return AppResponse.success(resDto, bundleService.getMessage("verified.successfully", lang));
+        } catch (FirebaseAuthException e) {
+            e.printStackTrace();
+            throw new AppBadException(bundleService.getMessage("verification.failed", lang));
+        }
     }
 
     private User getUserIfExists(String username, AppLanguage lang) {

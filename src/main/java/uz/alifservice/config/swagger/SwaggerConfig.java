@@ -1,11 +1,7 @@
 package uz.alifservice.config.swagger;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +19,7 @@ import java.util.List;
         ),
         servers = {
                 @Server(url = "http://localhost:8080", description = "Local Server"),
-                @Server(url = "https://api", description = "{Production} Server")
+                @Server(url = "http://52.87.181.142:8080", description = "{Production} Server")
         }
 //        security = @SecurityRequirement(name = "bearerAuth") // Apply globally
 )
@@ -48,7 +44,9 @@ public class SwaggerConfig {
                 new ApiGroup("Role Controller", "/api/v1/roles/**"),
                 new ApiGroup("Auth Controller", "/api/v1/auth/**"),
                 new ApiGroup("FileTempStorage Controller", "/api/v1/file/resource-file/**"),
-                new ApiGroup("Currency Controller", "/api/v1/currencies/**")
+                new ApiGroup("Currency Controller", "/api/v1/currencies/**"),
+                new ApiGroup("Debt Controller", "/api/v1/debts/**"),
+                new ApiGroup("DebtTransaction Controller", "/api/v1/debt-transactions/**")
         );
 
         return apiGroups.stream()

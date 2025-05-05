@@ -11,9 +11,12 @@ import java.math.BigDecimal;
 public class CurrencyCrudDto extends GenericCrudDto {
 
     private String code;
-    private String name;
+    private String nameUz;
+    private String nameRu;
+    private String nameEn;
     private String symbol;
     private BigDecimal exchangeRate;
     private String iconUrl;
+    private boolean popular;
     private String baseCurrency;
 }

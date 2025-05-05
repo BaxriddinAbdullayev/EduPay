@@ -18,8 +18,14 @@ public class Currency extends Auditable<Long> {
     @Column(name = "code", nullable = false, unique = true, length = 3)
     private String code;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "name_uz", nullable = false)
+    private String nameUz;
+
+    @Column(name = "name_ru", nullable = false)
+    private String nameRu;
+
+    @Column(name = "name_en", nullable = false)
+    private String nameEn;
 
     @Column(name = "symbol")
     private String symbol;
@@ -29,6 +35,12 @@ public class Currency extends Auditable<Long> {
 
     @Column(name = "is_active")
     private boolean active = true;
+
+    @Column(name = "is_popular")
+    private boolean popular = false;
+
+    @Column(name = "ordering")
+    private Integer ordering;
 
     @Column(name = "icon_url")
     private String iconUrl;

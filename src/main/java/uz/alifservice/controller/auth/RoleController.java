@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.alifservice.controller.GenericCrudController;
 import uz.alifservice.criteria.auth.RoleCriteria;
@@ -26,6 +27,7 @@ public class RoleController implements GenericCrudController<RoleDto, RoleCrudDt
     private final ResourceBundleService bundleService;
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/roles/{id}", method = RequestMethod.GET)
     public ResponseEntity<AppResponse<RoleDto>> get(
             @PathVariable(value = "id") Long id,
@@ -36,6 +38,7 @@ public class RoleController implements GenericCrudController<RoleDto, RoleCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/roles", method = RequestMethod.GET)
     public ResponseEntity<AppResponse<Page<RoleDto>>> list(
             RoleCriteria criteria,
@@ -46,6 +49,7 @@ public class RoleController implements GenericCrudController<RoleDto, RoleCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/roles", method = RequestMethod.POST)
     public ResponseEntity<AppResponse<RoleDto>> create(
             @RequestBody RoleCrudDto dto,
@@ -56,6 +60,7 @@ public class RoleController implements GenericCrudController<RoleDto, RoleCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/roles/{id}", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<AppResponse<RoleDto>> edit(
             @PathVariable(
@@ -68,6 +73,7 @@ public class RoleController implements GenericCrudController<RoleDto, RoleCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/roles/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<AppResponse<Boolean>> delete(
             @PathVariable(value = "id") Long id,

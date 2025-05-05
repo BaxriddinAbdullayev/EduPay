@@ -25,7 +25,7 @@ public class CurrencyService implements GenericCrudService<Currency, CurrencyCru
     @Override
     @Transactional(readOnly = true)
     public Currency get(Long id, AppLanguage lang) {
-        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Currency with id " + id + " not found"));
+        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
     }
 
     @Override

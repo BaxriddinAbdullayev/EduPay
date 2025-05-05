@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.alifservice.controller.GenericCrudController;
 import uz.alifservice.criteria.auth.UserCriteria;
@@ -26,6 +27,7 @@ public class UserController implements GenericCrudController<UserDto, UserCrudDt
     private final ResourceBundleService bundleService;
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.GET)
     public ResponseEntity<AppResponse<UserDto>> get(
             @PathVariable(value = "id") Long id,
@@ -36,6 +38,7 @@ public class UserController implements GenericCrudController<UserDto, UserCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/users", method = RequestMethod.GET)
     public ResponseEntity<AppResponse<Page<UserDto>>> list(
             UserCriteria criteria,
@@ -45,14 +48,8 @@ public class UserController implements GenericCrudController<UserDto, UserCrudDt
         return ResponseEntity.ok(AppResponse.success(service.list(criteria, lang).map(mapper::toDto), messsage));
     }
 
-    @RequestMapping(value = "/users/test", method = RequestMethod.GET)
-    public ResponseEntity<String> getTest(
-            UserCriteria criteria
-    ) {
-        return ResponseEntity.ok("Hello");
-    }
-
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/users", method = RequestMethod.POST)
     public ResponseEntity<AppResponse<UserDto>> create(
             @RequestBody UserCrudDto dto,
@@ -63,6 +60,7 @@ public class UserController implements GenericCrudController<UserDto, UserCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/users/{id}", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<AppResponse<UserDto>> edit(
             @PathVariable(
@@ -75,6 +73,7 @@ public class UserController implements GenericCrudController<UserDto, UserCrudDt
     }
 
     @Override
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<AppResponse<Boolean>> delete(
             @PathVariable(value = "id") Long id,

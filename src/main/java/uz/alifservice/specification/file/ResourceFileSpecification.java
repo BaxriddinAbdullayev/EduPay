@@ -23,7 +23,6 @@ public class ResourceFileSpecification extends GenericSpecification<ResourceFile
         if (!Objects.isNull(criteria.getOrigenName())) {
             predicates.add(criteriaBuilder.equal(root.get("origenName"), criteria.getOrigenName()));
         }
-        predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
 
         return query
                 .where(criteriaBuilder.and(predicates.toArray(new Predicate[0])))

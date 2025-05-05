@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,10 +24,10 @@ public class SpringConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-
 
     public static final String[] AUTH_WHITELIST = {
+            "/api/v1/debts/**",
+            "/api/v1/debt-transactions/**",
             "/api/v1/file/resource-file/**",
             "/api/v1/currencies/**",
             "/login/oauth2/code/**",
@@ -49,16 +48,11 @@ public class SpringConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry -> {
-                    authorizationManagerRequestMatcherRegistry
-                            .requestMatchers(AUTH_WHITELIST).permitAll()
-                            .anyRequest()
-                            .authenticated();
-                }).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService()))
-                        .successHandler(oAuth2SuccessHandler)
-                );
-
+            authorizationManagerRequestMatcherRegistry
+                    .requestMatchers(AUTH_WHITELIST).permitAll()
+                    .anyRequest()
+                    .authenticated();
+        }).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.csrf(AbstractHttpConfigurer::disable); // csrf yoqilgan
         http.cors(httpSecurityCorsConfigurer -> {
@@ -66,17 +60,13 @@ public class SpringConfig {
             configuration.setAllowedOriginPatterns(Arrays.asList("*"));
             configuration.setAllowedMethods(Arrays.asList("*"));
             configuration.setAllowedHeaders(Arrays.asList("*"));
+            configuration.setAllowCredentials(true);
 
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
             source.registerCorsConfiguration("/**", configuration);
             httpSecurityCorsConfigurer.configurationSource(source);
         });
         return http.build();
-    }
-
-    @Bean
-    public OidcUserService oidcUserService() {
-        return new OidcUserService();
     }
 
     @Bean

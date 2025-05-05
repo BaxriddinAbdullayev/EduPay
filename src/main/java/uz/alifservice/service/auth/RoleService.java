@@ -25,7 +25,7 @@ public class RoleService implements GenericCrudService<Role, RoleCrudDto, RoleCr
     @Override
     @Transactional(readOnly = true)
     public Role get(Long id, AppLanguage lang) {
-        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Role with id " + id + " not found"));
+        return repository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
     }
 
     @Override

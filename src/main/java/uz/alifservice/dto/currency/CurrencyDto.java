@@ -11,7 +11,9 @@ import java.math.BigDecimal;
 public class CurrencyDto extends GenericDto {
 
     private String code;
-    private String name;
+    private String nameUz;
+    private String nameRu;
+    private String nameEn;
     private String symbol;
     private BigDecimal exchangeRate;
     private String iconUrl;
