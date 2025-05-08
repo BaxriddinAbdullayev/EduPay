@@ -70,7 +70,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
             RuntimeException ex,
             @RequestHeader(value = "Accept-Language", defaultValue = "UZ") AppLanguage lang
     ) {
-        ex.getStackTrace();
+        ex.printStackTrace();
         return new ResponseEntity<>(
                 AppResponse.error(bundleService.getMessage("unexpected.error", lang)),
                 HttpStatus.INTERNAL_SERVER_ERROR

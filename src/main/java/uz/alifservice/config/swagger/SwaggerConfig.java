@@ -1,9 +1,14 @@
 package uz.alifservice.config.swagger;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,20 +23,20 @@ import java.util.List;
                 description = "MY Debt Control application"
         ),
         servers = {
-                @Server(url = "http://localhost:8080", description = "Local Server"),
+                @Server(url = "http://localhost:8082", description = "Local Server"),
                 @Server(url = "http://52.87.181.142:8080", description = "{Production} Server")
-        }
-//        security = @SecurityRequirement(name = "bearerAuth") // Apply globally
+        },
+        security = @SecurityRequirement(name = "bearerAuth") // Apply globally
 )
-//@SecurityScheme(
-//        name = "bearerAuth",
-//        type = SecuritySchemeType.HTTP,
-//        scheme = "bearer",
-//        bearerFormat = "JWT", // Optional: Defines the format (JWT)
-//        in = SecuritySchemeIn.HEADER,
-//        paramName = "Authorization"
-//)
-//@ConfigurationProperties(prefix = "swagger")
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT", // Optional: Defines the format (JWT)
+        in = SecuritySchemeIn.HEADER,
+        paramName = "Authorization"
+)
+@ConfigurationProperties(prefix = "swagger")
 public class SwaggerConfig {
 
     @Bean
@@ -43,10 +48,8 @@ public class SwaggerConfig {
                 new ApiGroup("User Controller", "/api/v1/users/**"),
                 new ApiGroup("Role Controller", "/api/v1/roles/**"),
                 new ApiGroup("Auth Controller", "/api/v1/auth/**"),
-                new ApiGroup("FileTempStorage Controller", "/api/v1/file/resource-file/**"),
-                new ApiGroup("Currency Controller", "/api/v1/currencies/**"),
-                new ApiGroup("Debt Controller", "/api/v1/debts/**"),
-                new ApiGroup("DebtTransaction Controller", "/api/v1/debt-transactions/**")
+                new ApiGroup("Student Controller", "/api/v1/students/**"),
+                new ApiGroup("Transaction Controller", "/api/v1/transactions/**")
         );
 
         return apiGroups.stream()

@@ -33,14 +33,6 @@ public class User extends Auditable<Long> {
     @Column(name = "is_active")
     private Boolean active = Boolean.TRUE;
 
-    // todo
-//    @Column(name = "photo_id")
-//    private String photoId;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "photo_id", insertable = false, updatable = false)
-//    private Attach photo;
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "auth_users_roles",
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},

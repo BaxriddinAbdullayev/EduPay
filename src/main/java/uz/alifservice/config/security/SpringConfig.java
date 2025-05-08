@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,10 +27,8 @@ public class SpringConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public static final String[] AUTH_WHITELIST = {
-            "/api/v1/debts/**",
-            "/api/v1/debt-transactions/**",
-            "/api/v1/file/resource-file/**",
-            "/api/v1/currencies/**",
+            "/api/v1/students/**",
+            "/api/v1/transactions/**",
             "/login/oauth2/code/**",
             "/api/v1/auth/**",
             "/swagger-ui/**",
@@ -49,6 +48,7 @@ public class SpringConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry -> {
             authorizationManagerRequestMatcherRegistry
+                    .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
                     .requestMatchers(AUTH_WHITELIST).permitAll()
                     .anyRequest()
                     .authenticated();
